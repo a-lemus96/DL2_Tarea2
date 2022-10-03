@@ -1,3 +1,5 @@
 train/
 test1/
 checkpoints/
+out/train/
+out/test/

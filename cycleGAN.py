@@ -35,7 +35,7 @@ Y_files = np.array(glob('./train/cat*'))
 # Ahora definimos unas cuantas variables globales.
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:15.557962Z","iopub.execute_input":"2022-09-29T16:05:15.558362Z","iopub.status.idle":"2022-09-29T16:05:15.564531Z","shell.execute_reply.started":"2022-09-29T16:05:15.558322Z","shell.execute_reply":"2022-09-29T16:05:15.562913Z"}}
-BUFFER_SIZE = 1000
+BUFFER_SIZE = 12500
 BATCH_SIZE = 32
 IMG_WIDTH = 256
 IMG_HEIGHT = 256
@@ -89,39 +89,39 @@ def load_image(file):
     return image
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:50.880875Z","iopub.execute_input":"2022-09-29T16:05:50.881628Z","iopub.status.idle":"2022-09-29T16:05:54.227898Z","shell.execute_reply.started":"2022-09-29T16:05:50.881585Z","shell.execute_reply":"2022-09-29T16:05:54.226881Z"}}
-train_X = tf.data.Dataset.list_files(X_files, shuffle=False)
-train_X = train_X.cache().map(load_image, num_parallel_calls=AUTOTUNE).shuffle(BUFFER_SIZE, reshuffle_each_iteration=True).batch(BATCH_SIZE)
+train_X = tf.data.Dataset.list_files(X_files, shuffle=True, seed=1)
+train_X = train_X.map(load_image, num_parallel_calls=AUTOTUNE).batch(BATCH_SIZE)
 
-train_Y = tf.data.Dataset.list_files(Y_files, shuffle=False)
-train_Y = train_Y.cache().map(load_image, num_parallel_calls=AUTOTUNE).shuffle(BUFFER_SIZE, reshuffle_each_iteration=True).batch(BATCH_SIZE)
+train_Y = tf.data.Dataset.list_files(Y_files, shuffle=True, seed=1)
+train_Y = train_Y.map(load_image, num_parallel_calls=AUTOTUNE).batch(BATCH_SIZE)
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:59.617164Z","iopub.execute_input":"2022-09-29T16:05:59.617562Z","iopub.status.idle":"2022-09-29T16:06:06.067741Z","shell.execute_reply.started":"2022-09-29T16:05:59.617522Z","shell.execute_reply":"2022-09-29T16:06:06.066638Z"}}
 sample_dog = next(iter(train_X))
 sample_cat = next(iter(train_Y))
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:06:13.705711Z","iopub.execute_input":"2022-09-29T16:06:13.706115Z","iopub.status.idle":"2022-09-29T16:06:14.099778Z","shell.execute_reply.started":"2022-09-29T16:06:13.706059Z","shell.execute_reply":"2022-09-29T16:06:14.097760Z"}}
-plt.figure(figsize=(12,6))
-plt.subplot(121)
-plt.title('Dog')
-plt.imshow(sample_dog[0] * 0.5 + 0.5)
-plt.axis('off')
+#plt.figure(figsize=(12,6))
+#plt.subplot(121)
+#plt.title('Dog')
+#plt.imshow(sample_dog[0] * 0.5 + 0.5)
+#plt.axis('off')
 
-plt.subplot(122)
-plt.title('Dog with random jitter')
-plt.imshow(random_jitter(sample_dog[0]) * 0.5 + 0.5)
-plt.axis('off')
+#plt.subplot(122)
+#plt.title('Dog with random jitter')
+#plt.imshow(random_jitter(sample_dog[0]) * 0.5 + 0.5)
+#plt.axis('off')
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:06:14.646984Z","iopub.execute_input":"2022-09-29T16:06:14.647781Z","iopub.status.idle":"2022-09-29T16:06:14.998965Z","shell.execute_reply.started":"2022-09-29T16:06:14.647719Z","shell.execute_reply":"2022-09-29T16:06:14.997963Z"}}
-plt.figure(figsize=(12,6))
-plt.subplot(121)
-plt.title('Cat')
-plt.imshow(sample_cat[0] * 0.5 + 0.5)
-plt.axis('off')
+#plt.figure(figsize=(12,6))
+#plt.subplot(121)
+#plt.title('Cat')
+#plt.imshow(sample_cat[0] * 0.5 + 0.5)
+#plt.axis('off')
 
-plt.subplot(122)
-plt.title('Cat with random jitter')
-plt.imshow(random_jitter(sample_cat[0]) * 0.5 + 0.5)
-plt.axis('off')
+#plt.subplot(122)
+#plt.title('Cat with random jitter')
+#plt.imshow(random_jitter(sample_cat[0]) * 0.5 + 0.5)
+#plt.axis('off')
 
 # %% [markdown]
 # ## Definición del modelo Generador
@@ -380,9 +380,9 @@ ckpt = tf.train.Checkpoint(generator_G=generator_G,
 ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
 
 # if a checkpoint exists, restore the latest checkpoint.
-if ckpt_manager.latest_checkpoint:
-    ckpt.restore(ckpt_manager.latest_checkpoint)
-    print ('Latest checkpoint restored!!')
+#if ckpt_manager.latest_checkpoint:
+#    ckpt.restore(ckpt_manager.latest_checkpoint)
+#    print ('Latest checkpoint restored!!')
 
 # %% [markdown]
 # ## Training
@@ -470,7 +470,7 @@ def train_step(real_X, real_Y):
         
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T02:24:50.758717Z","iopub.execute_input":"2022-09-29T02:24:50.759080Z","iopub.status.idle":"2022-09-29T04:03:32.669000Z","shell.execute_reply.started":"2022-09-29T02:24:50.759048Z","shell.execute_reply":"2022-09-29T04:03:32.667435Z"}}
-EPOCHS = 200
+EPOCHS = 20
 for epoch in range(EPOCHS):
     start = time.time()
 
@@ -481,13 +481,13 @@ for epoch in range(EPOCHS):
             print ('.', end='')
         n += 1
         
-    clear_output(wait=True)
     # Using a consistent image (sample_dog) so that the progress of the model
-    # is clearly visible.
+    #clear_output(wait=True)
     if (epoch + 1) % 10 == 0:
-        generate_images(generator_G, sample_dog, f'out/train/epoch_{epoch}.png')
+        generate_images(generator_G, sample_dog, f'out/train/epoch_{epoch+1}_dog.png')
+        generate_images(generator_F, sample_cat, f'out/train/epoch_{epoch+1}_cat.png')
         ckpt_save_path = ckpt_manager.save()
-        print ('Saving checkpoint for epoch {} at {}'.format(epoch+1,
+        print ('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
                                                              ckpt_save_path))
         
     print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
@@ -495,7 +495,10 @@ for epoch in range(EPOCHS):
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T04:03:46.182499Z","iopub.execute_input":"2022-09-29T04:03:46.182859Z","iopub.status.idle":"2022-09-29T04:03:51.309411Z","shell.execute_reply.started":"2022-09-29T04:03:46.182828Z","shell.execute_reply":"2022-09-29T04:03:51.308338Z"}}
 # Run the trained model on the test dataset
-for k, inp in enumerate(train_X.take(5)):
-    generate_images(generator_G, inp, 'out/test/test_{k}.png')
+inp = next(iter(train_X))
+for k in range(BATCH_SIZE):
+    generate_images(generator_G, inp[k][tf.newaxis, ...], f'out/test/test_{k+1}_dog.png')
 
-# %% [code]
+inp = next(iter(train_Y))
+for k in range(BATCH_SIZE):
+    generate_images(generator_F, inp[k][tf.newaxis, ...], f'out/test/test_{k+1}_cat.png')
