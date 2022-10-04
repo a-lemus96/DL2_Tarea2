@@ -22,16 +22,12 @@ AUTOTUNE = tf.data.AUTOTUNE
 # Print training and test dataset sizes.
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:15.280136Z","iopub.execute_input":"2022-09-29T16:05:15.280539Z","iopub.status.idle":"2022-09-29T16:05:15.448424Z","shell.execute_reply.started":"2022-09-29T16:05:15.280502Z","shell.execute_reply":"2022-09-29T16:05:15.447353Z"}}
-print(f"Number of training files: {len(glob('./train/*'))}\nNumber of dogs: {len(glob('./train/dog*'))}\nNumber of cats: {len(glob('./train/cat*'))}")
+print(f"Number of dogs: {len(glob('./train/dog/*'))}\nNumber of cats: {len(glob('./train/cat/*'))}")
 
 # %% [markdown]
 # Ahora creamos las listas de directorios para las imágenes de perros ($X$) y las imágenes de gatos ($Y$).
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:15.451270Z","iopub.execute_input":"2022-09-29T16:05:15.451925Z","iopub.status.idle":"2022-09-29T16:05:15.556295Z","shell.execute_reply.started":"2022-09-29T16:05:15.451882Z","shell.execute_reply":"2022-09-29T16:05:15.555218Z"}}
-X_files = np.array(glob('./train/dog*'))
-Y_files = np.array(glob('./train/cat*'))
-
-# %% [markdown]
 # Ahora definimos unas cuantas variables globales.
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:15.557962Z","iopub.execute_input":"2022-09-29T16:05:15.558362Z","iopub.status.idle":"2022-09-29T16:05:15.564531Z","shell.execute_reply.started":"2022-09-29T16:05:15.558322Z","shell.execute_reply":"2022-09-29T16:05:15.562913Z"}}
@@ -46,54 +42,19 @@ OUTPUT_CHANNELS = 3
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:15.566860Z","iopub.execute_input":"2022-09-29T16:05:15.567675Z","iopub.status.idle":"2022-09-29T16:05:15.576798Z","shell.execute_reply.started":"2022-09-29T16:05:15.567635Z","shell.execute_reply":"2022-09-29T16:05:15.575456Z"}}
 # randomly crop an IMG_HEIGHT x IMG_WIDTH patch
-def random_crop(image):
-    cropped_image = tf.image.random_crop(image, size=[IMG_HEIGHT, IMG_WIDTH, 3])
 
-    return cropped_image
-
+norm_layer = tf.keras.layers.experimental.preprocessing.Rescaling(scale=1./127.5, offset=-1)
 # normalizing the images to [-1, 1]
-def normalize(image):
-    image = tf.cast(image, tf.float32)
-    image = (image / 127.5) - 1
-    return image
-
-def random_jitter(image):
-    # resizing to 286 x 286 x 3
-    image = tf.image.resize(image, [286, 286], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    # randomly cropping to 256 x 256 x 3
-    image = random_crop(image)
-
-    # random mirroring
-    image = tf.image.random_flip_left_right(image)
-
-    return image
-
-def preprocess_image_train(image):
-    image = random_jitter(image)
-    image = normalize(image)
-    return image
 
 # %% [markdown] {"execution":{"iopub.status.busy":"2022-09-27T22:43:46.164898Z","iopub.execute_input":"2022-09-27T22:43:46.165342Z","iopub.status.idle":"2022-09-27T22:43:46.172424Z","shell.execute_reply.started":"2022-09-27T22:43:46.165303Z","shell.execute_reply":"2022-09-27T22:43:46.171018Z"}}
-# Definimos la función que utilizará el data loader para cargar las imágenes.
-
-# %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:15.578577Z","iopub.execute_input":"2022-09-29T16:05:15.578979Z","iopub.status.idle":"2022-09-29T16:05:15.587034Z","shell.execute_reply.started":"2022-09-29T16:05:15.578941Z","shell.execute_reply":"2022-09-29T16:05:15.586010Z"}}
-# Function definition for loading files and output tensor
-def load_image(file):
-    # Read and decode image file to uint8 tensor
-    image = tf.io.read_file(file)
-    image = tf.io.decode_jpeg(image)
-
-    image = preprocess_image_train(image)
-    
-    return image
+# Definimos la función que utilizará el data loader para cargar las imágenes
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:50.880875Z","iopub.execute_input":"2022-09-29T16:05:50.881628Z","iopub.status.idle":"2022-09-29T16:05:54.227898Z","shell.execute_reply.started":"2022-09-29T16:05:50.881585Z","shell.execute_reply":"2022-09-29T16:05:54.226881Z"}}
-train_X = tf.data.Dataset.list_files(X_files, shuffle=True, seed=1)
-train_X = train_X.map(load_image, num_parallel_calls=AUTOTUNE).batch(BATCH_SIZE)
+train_X = tf.keras.utils.image_dataset_from_directory(directory='./train/dog/', labels=None, seed=123, batch_size=BATCH_SIZE).take(200)
+train_X = train_X.map(lambda image: norm_layer(image), num_parallel_calls=AUTOTUNE)
 
-train_Y = tf.data.Dataset.list_files(Y_files, shuffle=True, seed=1)
-train_Y = train_Y.map(load_image, num_parallel_calls=AUTOTUNE).batch(BATCH_SIZE)
+train_Y = tf.keras.utils.image_dataset_from_directory(directory='./train/cat/', labels=None, seed=123, batch_size=BATCH_SIZE).take(200)
+train_Y = train_Y.map(lambda image: norm_layer(image), num_parallel_calls=AUTOTUNE)
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T16:05:59.617164Z","iopub.execute_input":"2022-09-29T16:05:59.617562Z","iopub.status.idle":"2022-09-29T16:06:06.067741Z","shell.execute_reply.started":"2022-09-29T16:05:59.617522Z","shell.execute_reply":"2022-09-29T16:06:06.066638Z"}}
 sample_dog = next(iter(train_X))
@@ -276,6 +237,7 @@ plt.title('Cat to dog, $F(Y)$')
 plt.imshow(gen_output2[0, ...]*50, cmap='gray')
 plt.axis('off')
 plt.savefig('out/Test_Random_Generators.png')
+plt.clf()
 #plt.show()
 
 # %% [markdown]
@@ -325,6 +287,7 @@ plt.axis('off')
 plt.imshow(discriminator_Y(sample_dog)[0, ..., -1], cmap='RdBu_r')
 
 plt.savefig('out/Test_Random_Discriminators.png')
+plt.clf()
 #plt.show()
 
 
@@ -380,9 +343,9 @@ ckpt = tf.train.Checkpoint(generator_G=generator_G,
 ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
 
 # if a checkpoint exists, restore the latest checkpoint.
-#if ckpt_manager.latest_checkpoint:
-#    ckpt.restore(ckpt_manager.latest_checkpoint)
-#    print ('Latest checkpoint restored!!')
+if ckpt_manager.latest_checkpoint:
+    ckpt.restore(ckpt_manager.latest_checkpoint)
+    print ('Latest checkpoint restored!!')
 
 # %% [markdown]
 # ## Training
@@ -403,6 +366,7 @@ def generate_images(model, test_input, fname):
         plt.imshow(display_list[i] * 0.5 + 0.5)
         plt.axis('off')
     plt.savefig(fname)
+    plt.clf()
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T01:36:30.495347Z","iopub.execute_input":"2022-09-29T01:36:30.495851Z","iopub.status.idle":"2022-09-29T01:36:30.519459Z","shell.execute_reply.started":"2022-09-29T01:36:30.495808Z","shell.execute_reply":"2022-09-29T01:36:30.517796Z"}}
 @tf.function
@@ -470,7 +434,7 @@ def train_step(real_X, real_Y):
         
 
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T02:24:50.758717Z","iopub.execute_input":"2022-09-29T02:24:50.759080Z","iopub.status.idle":"2022-09-29T04:03:32.669000Z","shell.execute_reply.started":"2022-09-29T02:24:50.759048Z","shell.execute_reply":"2022-09-29T04:03:32.667435Z"}}
-EPOCHS = 20
+EPOCHS = 50 
 for epoch in range(EPOCHS):
     start = time.time()
 
@@ -496,9 +460,9 @@ for epoch in range(EPOCHS):
 # %% [code] {"execution":{"iopub.status.busy":"2022-09-29T04:03:46.182499Z","iopub.execute_input":"2022-09-29T04:03:46.182859Z","iopub.status.idle":"2022-09-29T04:03:51.309411Z","shell.execute_reply.started":"2022-09-29T04:03:46.182828Z","shell.execute_reply":"2022-09-29T04:03:51.308338Z"}}
 # Run the trained model on the test dataset
 inp = next(iter(train_X))
-for k in range(BATCH_SIZE):
+for k in range(8):
     generate_images(generator_G, inp[k][tf.newaxis, ...], f'out/test/test_{k+1}_dog.png')
 
 inp = next(iter(train_Y))
-for k in range(BATCH_SIZE):
+for k in range(8):
     generate_images(generator_F, inp[k][tf.newaxis, ...], f'out/test/test_{k+1}_cat.png')
